@@ -1,2 +1,2 @@
-# revou_coding_camp
+# revou-coding-camp
 Learning coding camp
