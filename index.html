@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cat Clicker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes cat-bounce {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.3) rotate(-5deg); }
+      60%  { transform: scale(0.9) rotate(3deg); }
+      100% { transform: scale(1); }
+    }
+
+    .cat-bounce {
+      animation: cat-bounce 0.4s ease;
+    }
+
+    #reaction-bubble.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-pink-50 flex flex-col">
+
+  <noscript>
+    <div style="text-align:center; padding:2rem; color:#be185d; background:#fdf2f8; font-family:sans-serif;">
+      ⚠️ JavaScript diperlukan untuk menjalankan Cat Clicker. Silakan aktifkan JavaScript di browser Anda.
+    </div>
+  </noscript>
+
+  <!-- Header -->
+  <header class="bg-pink-200 py-6 text-center shadow-sm">
+    <h1 class="text-4xl font-bold text-pink-700">🐱 Cat Clicker</h1>
+    <p class="text-pink-500 mt-1">Klik kucing untuk melihat reaksinya!</p>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col items-center justify-center py-10 px-4">
+
+    <!-- Cat Card -->
+    <div class="bg-white rounded-3xl shadow-lg shadow-pink-100 p-8 flex flex-col items-center gap-4 w-full max-w-sm">
+
+      <!-- Reaction Bubble -->
+      <div id="reaction-bubble"
+           class="h-10 text-xl font-semibold text-orange-500 opacity-0"
+           style="transition: opacity 0.3s ease;">
+      </div>
+
+      <!-- Cat Display -->
+      <div id="cat-display"
+           class="text-8xl cursor-pointer select-none hover:scale-110 transition-transform duration-200"
+           role="button"
+           tabindex="0"
+           aria-label="Kucing, klik untuk reaksi">
+        🐱
+      </div>
+
+      <!-- Click Counter -->
+      <p id="click-counter" class="text-lg font-medium text-pink-600">Jumlah Klik: 0</p>
+
+    </div>
+
+    <!-- Reset Button -->
+    <button id="reset-btn"
+            class="mt-6 px-6 py-2 bg-pink-400 hover:bg-pink-500 active:bg-pink-600 text-white font-semibold rounded-full shadow transition-colors duration-200">
+      🔄 Reset
+    </button>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="py-4 text-center text-pink-400 text-sm">
+    Dibuat dengan ❤️ &amp; Tailwind CSS
+  </footer>
+
+  <script>
+    // ─── Constants ───────────────────────────────────────────
+    const REACTIONS = [
+      { teks: "Meow! 😺",          emoji: "😺" },
+      { teks: "Purrrr... 😻",      emoji: "😻" },
+      { teks: "Hiss! 😾",          emoji: "😾" },
+      { teks: "Zzzz... 😴",        emoji: "😴" },
+      { teks: "Yawn! 🙀",          emoji: "🙀" },
+      { teks: "Feed me! 😿",       emoji: "😿" },
+      { teks: "Play time! 😸",     emoji: "😸" },
+      { teks: "So happy! 😹",      emoji: "😹" },
+    ];
+
+    // ─── State ───────────────────────────────────────────────
+    let clickCount = 0;
+    let reactionTimer = null;
+
+    // ─── Reaction Engine ─────────────────────────────────────
+    function getRandomReaction() {
+      const idx = Math.floor(Math.random() * REACTIONS.length);
+      return REACTIONS[idx];
+    }
+
+    // ─── UI Updates ──────────────────────────────────────────
+    function updateCounter(counterEl) {
+      counterEl.textContent = `Jumlah Klik: ${clickCount}`;
+    }
+
+    function showReaction(reaction, catEl, reactionEl) {
+      // Batalkan timer sebelumnya (race condition prevention)
+      clearTimeout(reactionTimer);
+
+      // Update konten
+      reactionEl.textContent = reaction.teks;
+      catEl.textContent = reaction.emoji;
+
+      // Fade in
+      reactionEl.classList.add('visible');
+
+      // Auto-hide setelah 2.5 detik
+      reactionTimer = setTimeout(() => {
+        reactionEl.classList.remove('visible');
+        // Hapus teks dan kembalikan emoji default setelah fade out selesai
+        setTimeout(() => {
+          reactionEl.textContent = '';
+          catEl.textContent = '🐱';
+        }, 300);
+      }, 2500);
+    }
+
+    function triggerBounce(catEl) {
+      catEl.classList.remove('cat-bounce');
+      void catEl.offsetWidth; // reflow trick untuk restart animasi
+      catEl.classList.add('cat-bounce');
+    }
+
+    // ─── Event Handlers ──────────────────────────────────────
+    function handleCatClick(catEl, reactionEl, counterEl) {
+      clickCount += 1;
+      updateCounter(counterEl);
+      const reaction = getRandomReaction();
+      showReaction(reaction, catEl, reactionEl);
+      triggerBounce(catEl);
+    }
+
+    function handleReset(catEl, reactionEl, counterEl) {
+      clearTimeout(reactionTimer);
+      reactionTimer = null;
+      clickCount = 0;
+      updateCounter(counterEl);
+      reactionEl.classList.remove('visible');
+      reactionEl.textContent = '';
+      catEl.textContent = '🐱';
+    }
+
+    // ─── Initialization ──────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      const catEl      = document.getElementById('cat-display');
+      const reactionEl = document.getElementById('reaction-bubble');
+      const counterEl  = document.getElementById('click-counter');
+      const resetBtn   = document.getElementById('reset-btn');
+
+      // Click events
+      catEl.addEventListener('click', () => handleCatClick(catEl, reactionEl, counterEl));
+      resetBtn.addEventListener('click', () => handleReset(catEl, reactionEl, counterEl));
+
+      // Keyboard support (accessibility)
+      catEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleCatClick(catEl, reactionEl, counterEl);
+        }
+      });
+
+      // Init counter display
+      updateCounter(counterEl);
+    });
+  </script>
+</body>
+</html>
